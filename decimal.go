@@ -9,7 +9,7 @@
 //
 // To use Decimal as part of a struct:
 //
-//	type StructName struct {
+//	type Struct struct {
 //	    Number Decimal
 //	}
 //
@@ -56,14 +56,6 @@ var DivisionPrecision = 16
 //	d2, err := decimal.NewFromFloat(15.2).PowInt32(-2)
 //	d2.String() // output: "0.004328254847645429362881"
 var PowPrecisionNegativeExponent = 16
-
-// MarshalJSONWithoutQuotes should be set to true if you want the decimal to
-// be JSON marshaled as a number, instead of as a string.
-// WARNING: this is dangerous for decimals with many digits, since many JSON
-// unmarshallers (ex: Javascript's) will unmarshal JSON numbers to IEEE 754
-// double-precision floating point numbers, which means you can potentially
-// silently lose precision.
-var MarshalJSONWithoutQuotes = false
 
 // ExpMaxIterations specifies the maximum number of iterations needed to calculate
 // precise natural exponent value using ExpHullAbrham method.
@@ -1760,36 +1752,6 @@ func (d Decimal) Truncate(precision int32) Decimal {
 	return d
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface.
-func (d *Decimal) UnmarshalJSON(decimalBytes []byte) error {
-	if string(decimalBytes) == "null" {
-		return nil
-	}
-
-	str, err := unquoteIfQuoted(decimalBytes)
-	if err != nil {
-		return fmt.Errorf("error decoding string '%s': %s", decimalBytes, err)
-	}
-
-	decimal, err := NewFromString(str)
-	*d = decimal
-	if err != nil {
-		return fmt.Errorf("error decoding string '%s': %s", str, err)
-	}
-	return nil
-}
-
-// MarshalJSON implements the json.Marshaler interface.
-func (d Decimal) MarshalJSON() ([]byte, error) {
-	var str string
-	if MarshalJSONWithoutQuotes {
-		str = d.String()
-	} else {
-		str = "\"" + d.String() + "\""
-	}
-	return []byte(str), nil
-}
-
 // UnmarshalBinary implements the encoding.BinaryUnmarshaler interface. As a string representation
 // is already used when encoding to text, this method stores that string as []byte
 func (d *Decimal) UnmarshalBinary(data []byte) error {
@@ -2038,83 +2000,6 @@ func unquoteIfQuoted(value interface{}) (string, error) {
 		bytes = bytes[1 : len(bytes)-1]
 	}
 	return string(bytes), nil
-}
-
-// NullDecimal represents a nullable decimal with compatibility for
-// scanning null values from the database.
-type NullDecimal struct {
-	Decimal Decimal
-	Valid   bool
-}
-
-func NewNullDecimal(d Decimal) NullDecimal {
-	return NullDecimal{
-		Decimal: d,
-		Valid:   true,
-	}
-}
-
-// Scan implements the sql.Scanner interface for database deserialization.
-func (d *NullDecimal) Scan(value interface{}) error {
-	if value == nil {
-		d.Valid = false
-		return nil
-	}
-	d.Valid = true
-	return d.Decimal.Scan(value)
-}
-
-// Value implements the driver.Valuer interface for database serialization.
-func (d NullDecimal) Value() (driver.Value, error) {
-	if !d.Valid {
-		return nil, nil
-	}
-	return d.Decimal.Value()
-}
-
-// UnmarshalJSON implements the json.Unmarshaler interface.
-func (d *NullDecimal) UnmarshalJSON(decimalBytes []byte) error {
-	if string(decimalBytes) == "null" {
-		d.Valid = false
-		return nil
-	}
-	d.Valid = true
-	return d.Decimal.UnmarshalJSON(decimalBytes)
-}
-
-// MarshalJSON implements the json.Marshaler interface.
-func (d NullDecimal) MarshalJSON() ([]byte, error) {
-	if !d.Valid {
-		return []byte("null"), nil
-	}
-	return d.Decimal.MarshalJSON()
-}
-
-// UnmarshalText implements the encoding.TextUnmarshaler interface for XML
-// deserialization
-func (d *NullDecimal) UnmarshalText(text []byte) error {
-	str := string(text)
-
-	// check for empty XML or XML without body e.g., <tag></tag>
-	if str == "" {
-		d.Valid = false
-		return nil
-	}
-	if err := d.Decimal.UnmarshalText(text); err != nil {
-		d.Valid = false
-		return err
-	}
-	d.Valid = true
-	return nil
-}
-
-// MarshalText implements the encoding.TextMarshaler interface for XML
-// serialization.
-func (d NullDecimal) MarshalText() (text []byte, err error) {
-	if !d.Valid {
-		return []byte{}, nil
-	}
-	return d.Decimal.MarshalText()
 }
 
 // Trig functions
