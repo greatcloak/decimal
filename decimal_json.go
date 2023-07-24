@@ -12,7 +12,18 @@ var MarshalJSONWithoutQuotes = false
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (d *Decimal) UnmarshalJSON(decimalBytes []byte) error {
-	if string(decimalBytes) == "null" {
+	switch string(decimalBytes) {
+	case "null":
+		// TODO should this set to zero value or nil?
+		return nil
+	case `""`:
+		// Set to zero value
+		// Allow enter an empty string which is common if you work with web apps or json apis.
+		// HTML typically uses a string based input which is the best representation for our Decimal.
+		// The empty value for that is an empty string.
+		//
+		// Make sure we do not return an error when reading empty strings. We interpret them as a zero.
+		*d = Decimal{}
 		return nil
 	}
 
@@ -35,13 +46,6 @@ func (d Decimal) MarshalJSON() ([]byte, error) {
 	if MarshalJSONWithoutQuotes {
 		str = d.String()
 	} else {
-		if d.IsZero() == false {
-			// Return an empty string instead of `"0"` for the zero value.
-			// This tends to work better with form fields since you have to typically have this be a text based input.
-			// Otherwise if you use a number input from a browser or other os, then you are going to be parsed into a floating point based number instead of a fixed precision decimal like this library.
-			return []byte(`""`), nil
-		}
-
 		str = `"` + d.String() + `"`
 	}
 	return []byte(str), nil
