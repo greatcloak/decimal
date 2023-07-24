@@ -1,8 +1,9 @@
 # decimal
 
-[![Github Actions](https://github.com/shopspring/decimal/actions/workflows/ci.yml/badge.svg)](https://github.com/shopspring/decimal/actions/workflows/ci.yml)
-[![GoDoc](https://godoc.org/github.com/shopspring/decimal?status.svg)](https://godoc.org/github.com/shopspring/decimal) 
-[![Go Report Card](https://goreportcard.com/badge/github.com/shopspring/decimal)](https://goreportcard.com/report/github.com/shopspring/decimal)
+<!-- [![Github Actions](https://github.com/shopspring/decimal/actions/workflows/ci.yml/badge.svg)](https://github.com/shopspring/decimal/actions/workflows/ci.yml) -->
+
+[![GoDoc](https://godoc.org/github.com/greatcloak/decimal?status.svg)](https://godoc.org/github.com/greatcloak/decimal)
+[![Go Report Card](https://goreportcard.com/badge/github.com/greatcloak/decimal)](https://goreportcard.com/report/github.com/greatcloak/decimal)
 
 Arbitrary-precision fixed-point decimal numbers in go.
 
@@ -10,19 +11,32 @@ _Note:_ Decimal library can "only" represent numbers with a maximum of 2^31 digi
 
 ## Features
 
- * The zero-value is 0, and is safe to use without initialization
- * Addition, subtraction, multiplication with no loss of precision
- * Division with specified precision
- * Database/sql serialization/deserialization
- * JSON and XML serialization/deserialization
+- JSON outputs empty string for zero value
+- The zero-value is 0, and is safe to use without initialization
+- Addition, subtraction, multiplication with no loss of precision
+- Division with specified precision
+- Database/sql serialization/deserialization
+- JSON, XML, and BSON serialization/deserialization
+
+## History & Project Status
+
+This project is based on [shopspring/decimal](https://github.com/greatcloak/decimal) which was originally a heavily modified fork of [fpd.Decimal](https://github.com/oguzbilgic/fpd).
+
+Our aim is to continue maintaining the library as well as make it easier to develop with/on. Notable changes include:
+
+- Adding a BSON marshaller/unmarshaller to make working with mongodb easier.
+- Consider an empty string to be a valid value when unmarshalling json.
+  - Makes working with web apps and html forms easier since you are suggested to use a text based input since number inputs lack the precision this library offers.
+- Refactoring/splitting up of files and tests to make more readable
+- Merging pull requests for any arithmetic related bugs or other fixes
 
 ## Install
 
-Run `go get github.com/shopspring/decimal`
+Run `go get github.com/greatcloak/decimal`
 
-## Requirements 
+## Requirements
 
-Decimal library requires Go version `>=1.7`
+Decimal library requires Go version `>=1.20`
 
 ## Usage
 
@@ -31,7 +45,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/shopspring/decimal"
+	"github.com/greatcloak/decimal"
 )
 
 func main() {
@@ -61,12 +75,12 @@ func main() {
 
 ## Documentation
 
-http://godoc.org/github.com/shopspring/decimal
+http://godoc.org/github.com/greatcloak/decimal
 
 ## Production Usage
 
-* [Spring](https://shopspring.com/), since August 14, 2014.
-* If you are using this in production, please let us know!
+- [Spring](https://shopspring.com/), since August 14, 2014.
+- If you are using this in production, please let us know!
 
 ## FAQ
 
@@ -121,12 +135,12 @@ In contrast, it's difficult to make such mistakes with decimal. Decimals
 behave like other go numbers types: even though `a = b` will not deep copy
 `b` into `a`, it is impossible to modify a Decimal, since all Decimal methods
 return new Decimals and do not modify the originals. The downside is that
-this causes extra allocations, so Decimal is less performant.  My assumption
+this causes extra allocations, so Decimal is less performant. My assumption
 is that if you're using Decimals, you probably care more about correctness
 than performance.
 
 ## License
 
-The MIT License (MIT)
+The MIT License (MIT).
 
-This is a heavily modified fork of [fpd.Decimal](https://github.com/oguzbilgic/fpd), which was also released under the MIT License.
+This is a modified fork of [shopspring/decimal](https://github.com/greatcloak/decimal) which was originally a heavily modified fork of [fpd.Decimal](https://github.com/oguzbilgic/fpd). Both were released under the MIT License.
