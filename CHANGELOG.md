@@ -1,3 +1,12 @@
+## Decimal v1.4.0
+
+Forked as https://github.com/greatcloak/decimal.
+
+- Update readme with project status and fork info
+- Refactor files/tests for readability and fix go linter errors
+- Add BSON marshaler/unmarshaller
+- Allow empty string when unmarshalling JSON
+
 ## Decimal v1.3.1
 
 #### ENHANCEMENTS
