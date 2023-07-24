@@ -1,3 +1,7 @@
+## Decimal v1.4.1
+
+- Fix BSON encoding/decoding not working with omitempty or pointer fields
+
 ## Decimal v1.4.0
 
 Forked as https://github.com/greatcloak/decimal.

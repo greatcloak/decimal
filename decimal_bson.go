@@ -2,48 +2,77 @@ package decimal
 
 import (
 	"fmt"
+	"reflect"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/bsontype"
+	"go.mongodb.org/mongo-driver/bson/bsoncodec"
+	"go.mongodb.org/mongo-driver/bson/bsonrw"
 )
 
-var _ bson.ValueUnmarshaler = (*Decimal)(nil)
+func init() {
+	// Auto register our Decimal encoder and decoder for bson when this package is imported.
+	RegisterBSONDecimalCodec(bson.DefaultRegistry)
+}
 
-func (dec *Decimal) UnmarshalBSONValue(bt bsontype.Type, raw []byte) error {
+// RegisterBSONDecimalCodec registers the encoder and decoder for [Decimal].
+// The encoder/decoder are automatically registered on [bson.DefaultRegistry] on package import.
+func RegisterBSONDecimalCodec(registry *bsoncodec.Registry) {
+	// Register custom encoder and decoder for decimal type
+	registry.RegisterTypeEncoder(decimalType, bsoncodec.ValueEncoderFunc(decimalBSONEncodeValue))
+	registry.RegisterTypeDecoder(decimalType, bsoncodec.ValueDecoderFunc(decimalBSONDecodeValue))
+}
 
-	// Only read from string
-	// TODO should we support mongodb's Decimal128
-	if bt != bson.TypeString {
-		// TODO we can also add support for reading in Decimal128 or other number types from mongodb.
-		return fmt.Errorf("expected bson string for Decimal type but received: %s", bt)
+// decimalType is the reflected type of a [Decimal].
+var decimalType = reflect.TypeOf(Decimal{})
+
+// decimalBSONEncodeValue encodes a shopspring decimal to string.
+// This is the safest format as it contains the entire value and can be decoded from.
+func decimalBSONEncodeValue(ec bsoncodec.EncodeContext, vw bsonrw.ValueWriter, val reflect.Value) error {
+	if val.Type() != decimalType {
+		// ShopSpring decimal
+		return bsoncodec.ValueEncoderError{
+			// prefix with GC to avoid any mongodb name collisions
+			// They have a Decimal128 type which this is not.
+			Name:     "GCDecimalEncodeValue",
+			Types:    []reflect.Type{decimalType},
+			Received: val,
+		}
 	}
 
-	var valAsString string
+	// Convert to a decimal
+	dec := val.Interface().(Decimal)
 
-	err := bson.UnmarshalValue(bt, raw, &valAsString)
+	return vw.WriteString(dec.String())
+}
+
+// decimalBSONDecodeValue decodes a string into a decimal.
+func decimalBSONDecodeValue(dc bsoncodec.DecodeContext, vr bsonrw.ValueReader, val reflect.Value) error {
+
+	if !val.IsValid() || !val.CanSet() || val.Type() != decimalType {
+		return bsoncodec.ValueDecoderError{
+			// prefix with GC to avoid any mongodb name collisions
+			// They have a Decimal128 type which this is not.
+			Name:     "GCDecimalDecodeValue",
+			Types:    []reflect.Type{decimalType},
+			Received: val,
+		}
+	}
+
+	// Only read from string
+	if vr.Type() != bson.TypeString {
+		return fmt.Errorf("received invalid BSON type to decode into Decimal: %s", vr.Type())
+	}
+	b, err := vr.ReadString()
 	if err != nil {
 		return err
 	}
 
-	result, err := NewFromString(valAsString)
+	result, err := NewFromString(b)
 	if err != nil {
 		return fmt.Errorf("error creating new decimal from string: %w", err)
 	}
 
-	// val.Set(reflect.ValueOf(result))
-	*dec = result
+	val.Set(reflect.ValueOf(result))
 
 	return nil
-}
-
-var _ bson.ValueMarshaler = Decimal{}
-
-// MarshalBSONValue implments marshalling a GridStorageFile to bson as a string.
-//
-// Mongodb also supports Decimal128 which has 31 digits of precision.
-// You can register a custom codec w/ bson if this is enough precision.
-// For finacial systems it usually is not.
-func (dec Decimal) MarshalBSONValue() (bsontype.Type, []byte, error) {
-	return bson.MarshalValue(dec.String())
-	// return bson.Marshal(dec.String())
 }
