@@ -1,3 +1,3 @@
-module github.com/shopspring/decimal
+module github.com/greatcloak/decimal
 
-go 1.10
+go 1.20

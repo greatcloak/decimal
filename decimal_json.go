@@ -35,7 +35,14 @@ func (d Decimal) MarshalJSON() ([]byte, error) {
 	if MarshalJSONWithoutQuotes {
 		str = d.String()
 	} else {
-		str = "\"" + d.String() + "\""
+		if d.IsZero() == false {
+			// Return an empty string instead of `"0"` for the zero value.
+			// This tends to work better with form fields since you have to typically have this be a text based input.
+			// Otherwise if you use a number input from a browser or other os, then you are going to be parsed into a floating point based number instead of a fixed precision decimal like this library.
+			return []byte(`""`), nil
+		}
+
+		str = `"` + d.String() + `"`
 	}
 	return []byte(str), nil
 }
