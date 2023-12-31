@@ -36,7 +36,7 @@ Run `go get github.com/greatcloak/decimal`
 
 ## Requirements
 
-Decimal library requires Go version `>=1.20`
+Decimal library requires Go version `>=1.21`
 
 ## Usage
 
