@@ -555,9 +555,58 @@ func TestNewFromBigIntWithExponent(t *testing.T) {
 	}
 }
 
+func TestNewFromBigRat(t *testing.T) {
+	mustParseRat := func(val string) *big.Rat {
+		num, _ := new(big.Rat).SetString(val)
+		return num
+	}
+
+	type Inp struct {
+		val  *big.Rat
+		prec int32
+	}
+
+	tests := map[Inp]string{
+		Inp{big.NewRat(0, 1), 16}:                                                     "0",
+		Inp{big.NewRat(4, 5), 16}:                                                     "0.8",
+		Inp{big.NewRat(10, 2), 16}:                                                    "5",
+		Inp{big.NewRat(1023427554493, 43432632), 16}:                                  "23563.5628642767953828", // rounded
+		Inp{big.NewRat(1, 434324545566634), 16}:                                       "0.0000000000000023",
+		Inp{big.NewRat(1, 3), 16}:                                                     "0.3333333333333333",
+		Inp{big.NewRat(2, 3), 2}:                                                      "0.67",               // rounded
+		Inp{big.NewRat(2, 3), 16}:                                                     "0.6666666666666667", // rounded
+		Inp{big.NewRat(10000, 3), 16}:                                                 "3333.3333333333333333",
+		Inp{mustParseRat("30702832066636633479"), 16}:                                 "30702832066636633479",
+		Inp{mustParseRat("487028320159896636679.1827512895753"), 16}:                  "487028320159896636679.1827512895753",
+		Inp{mustParseRat("127028320612589896636633479.173582751289575278357832"), -2}: "127028320612589896636633500",                  // rounded
+		Inp{mustParseRat("127028320612589896636633479.173582751289575278357832"), 16}: "127028320612589896636633479.1735827512895753", // rounded
+		Inp{mustParseRat("127028320612589896636633479.173582751289575278357832"), 32}: "127028320612589896636633479.173582751289575278357832",
+	}
+
+	// add negatives
+	for p, s := range tests {
+		if p.val.Cmp(new(big.Rat)) > 0 {
+			tests[Inp{p.val.Neg(p.val), p.prec}] = "-" + s
+		}
+	}
+
+	for input, s := range tests {
+		d := NewFromBigRat(input.val, input.prec)
+		if d.String() != s {
+			t.Errorf("expected %s, got %s (%s, %d)",
+				s, d.String(),
+				d.value.String(), d.exp)
+		}
+	}
+}
+
 func TestCopy(t *testing.T) {
 	origin := New(1, 0)
 	cpy := origin.Copy()
+
+	if origin.value == cpy.value {
+		t.Error("expecting copy and origin to have different value pointers")
+	}
 
 	if cpy.Cmp(origin) != 0 {
 		t.Error("expecting copy and origin to be equals, but they are not")
@@ -1889,6 +1938,8 @@ func TestDecimal_Mod(t *testing.T) {
 		{"-7.5", "2"}:                        "-1.5",
 		{"7.5", "-2"}:                        "1.5",
 		{"-7.5", "-2"}:                       "-1.5",
+		{"41", "21"}:                         "20",
+		{"400000000001", "200000000001"}:     "200000000000",
 	}
 
 	for inp, res := range inputs {
@@ -2488,6 +2539,67 @@ func TestDecimal_ExpTaylor(t *testing.T) {
 		if exp.Cmp(expected) != 0 {
 			t.Errorf("expected %s, got %s", testCase.ExpectedDec, exp.String())
 		}
+	}
+}
+
+func TestDecimal_Ln(t *testing.T) {
+	for _, testCase := range []struct {
+		Dec       string
+		Precision int32
+		Expected  string
+	}{
+		{"0.1", 25, "-2.3025850929940456840179915"},
+		{"0.01", 25, "-4.6051701859880913680359829"},
+		{"0.001", 25, "-6.9077552789821370520539744"},
+		{"0.00000001", 25, "-18.4206807439523654721439316"},
+		{"1.0", 10, "0.0"},
+		{"1.01", 25, "0.0099503308531680828482154"},
+		{"1.001", 25, "0.0009995003330835331668094"},
+		{"1.0001", 25, "0.0000999950003333083353332"},
+		{"1.1", 25, "0.0953101798043248600439521"},
+		{"1.13", 25, "0.1222176327242492005461486"},
+		{"3.13", 10, "1.1410330046"},
+		{"3.13", 25, "1.1410330045520618486427824"},
+		{"3.13", 50, "1.14103300455206184864278239988848193837089629107972"},
+		{"3.13", 100, "1.1410330045520618486427823998884819383708962910797239760817078430268177216960996098918971117211892839"},
+		{"5.71", 25, "1.7422190236679188486939833"},
+		{"5.7185108151957193571930205", 50, "1.74370842450178929149992165925283704012576949094645"},
+		{"839101.0351", 25, "13.6400864014410013994397240"},
+		{"839101.0351094726488848490572028502", 50, "13.64008640145229044389152437468283605382056561604272"},
+		{"5023583755703750094849.03519358513093500275017501750602739169823", 25, "49.9684305274348922267409953"},
+		{"5023583755703750094849.03519358513093500275017501750602739169823", -1, "50.0"},
+	} {
+		d, _ := NewFromString(testCase.Dec)
+		expected, _ := NewFromString(testCase.Expected)
+
+		ln, err := d.Ln(testCase.Precision)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if ln.Cmp(expected) != 0 {
+			t.Errorf("expected %s, got %s, for decimal %s", testCase.Expected, ln.String(), testCase.Dec)
+		}
+	}
+}
+
+func TestDecimal_LnZero(t *testing.T) {
+	d := New(0, 0)
+
+	_, err := d.Ln(5)
+
+	if err == nil {
+		t.Errorf("expected error, natural logarithm of 0 cannot be represented (-infinity)")
+	}
+}
+
+func TestDecimal_LnNegative(t *testing.T) {
+	d := New(-20, 2)
+
+	_, err := d.Ln(5)
+
+	if err == nil {
+		t.Errorf("expected error, natural logarithm cannot be calculated for nagative decimals")
 	}
 }
 
