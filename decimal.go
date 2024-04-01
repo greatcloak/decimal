@@ -911,7 +911,10 @@ func (d Decimal) Ln(precision int32) (Decimal, error) {
 		// Halley's Iteration.
 		// Calculating n-th term of formula: a_(n+1) = a_n - 2 * (exp(a_n) - z) / (exp(a_n) + z),
 		// until the difference between current and next term is smaller than epsilon
-		for {
+		var prevStep Decimal
+		maxIters := calcPrecision*2 + 10
+
+		for i := int32(0); i < maxIters; i++ {
 			// exp(a_n)
 			comp3, _ = comp1.ExpTaylor(calcPrecision)
 			// exp(a_n) - z
@@ -925,9 +928,17 @@ func (d Decimal) Ln(precision int32) (Decimal, error) {
 			// comp1 = a_(n+1) = a_n - 2 * (exp(a_n) - z) / (exp(a_n) + z)
 			comp1 = comp1.Sub(comp3)
 
+			if prevStep.Add(comp3).IsZero() {
+				// If iteration steps oscillate we should return early and prevent an infinity loop
+				// NOTE(mwoss): This should be quite a rare case, returning error is not necessary
+				break
+			}
+
 			if comp3.Abs().Cmp(epsilon) <= 0 {
 				break
 			}
+
+			prevStep = comp3
 		}
 	}
 
