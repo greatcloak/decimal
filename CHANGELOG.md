@@ -1,3 +1,10 @@
+## Decimal v1.4.5
+
+- Rebase on upstream
+- Require go 1.24 and update go deps
+
+Previous releases contained merged pull requests.
+
 ## Decimal v1.4.1
 
 - Fix BSON encoding/decoding not working with omitempty or pointer fields

@@ -1,10 +1,10 @@
 module github.com/greatcloak/decimal
 
-go 1.21
+go 1.24
 
 require (
 	github.com/stretchr/testify v1.8.4
-	go.mongodb.org/mongo-driver v1.13.1
+	go.mongodb.org/mongo-driver v1.17.3
 )
 
 require (
