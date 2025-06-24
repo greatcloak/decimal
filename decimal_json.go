@@ -27,15 +27,10 @@ func (d *Decimal) UnmarshalJSON(decimalBytes []byte) error {
 		return nil
 	}
 
-	str, err := unquoteIfQuoted(decimalBytes)
-	if err != nil {
-		return fmt.Errorf("error decoding string '%s': %s", decimalBytes, err)
-	}
-
-	decimal, err := NewFromString(str)
+	decimal, err := NewFromString(unquoteIfQuoted(string(decimalBytes)))
 	*d = decimal
 	if err != nil {
-		return fmt.Errorf("error decoding string '%s': %s", str, err)
+		return fmt.Errorf("error decoding string '%s': %s", string(decimalBytes), err)
 	}
 	return nil
 }
