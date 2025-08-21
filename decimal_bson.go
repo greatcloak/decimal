@@ -4,22 +4,15 @@ import (
 	"fmt"
 	"reflect"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/bsoncodec"
-	"go.mongodb.org/mongo-driver/bson/bsonrw"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
-
-func init() {
-	// Auto register our Decimal encoder and decoder for bson when this package is imported.
-	RegisterBSONDecimalCodec(bson.DefaultRegistry)
-}
 
 // RegisterBSONDecimalCodec registers the encoder and decoder for [Decimal].
 // The encoder/decoder are automatically registered on [bson.DefaultRegistry] on package import.
-func RegisterBSONDecimalCodec(registry *bsoncodec.Registry) {
+func RegisterBSONDecimalCodec(registry *bson.Registry) {
 	// Register custom encoder and decoder for decimal type
-	registry.RegisterTypeEncoder(decimalType, bsoncodec.ValueEncoderFunc(decimalBSONEncodeValue))
-	registry.RegisterTypeDecoder(decimalType, bsoncodec.ValueDecoderFunc(decimalBSONDecodeValue))
+	registry.RegisterTypeEncoder(decimalType, bson.ValueEncoderFunc(decimalBSONEncodeValue))
+	registry.RegisterTypeDecoder(decimalType, bson.ValueDecoderFunc(decimalBSONDecodeValue))
 }
 
 // decimalType is the reflected type of a [Decimal].
@@ -27,10 +20,10 @@ var decimalType = reflect.TypeOf(Decimal{})
 
 // decimalBSONEncodeValue encodes a shopspring decimal to string.
 // This is the safest format as it contains the entire value and can be decoded from.
-func decimalBSONEncodeValue(ec bsoncodec.EncodeContext, vw bsonrw.ValueWriter, val reflect.Value) error {
+func decimalBSONEncodeValue(ec bson.EncodeContext, vw bson.ValueWriter, val reflect.Value) error {
 	if val.Type() != decimalType {
 		// ShopSpring decimal
-		return bsoncodec.ValueEncoderError{
+		return bson.ValueEncoderError{
 			// prefix with GC to avoid any mongodb name collisions
 			// They have a Decimal128 type which this is not.
 			Name:     "GCDecimalEncodeValue",
@@ -46,10 +39,10 @@ func decimalBSONEncodeValue(ec bsoncodec.EncodeContext, vw bsonrw.ValueWriter, v
 }
 
 // decimalBSONDecodeValue decodes a string into a decimal.
-func decimalBSONDecodeValue(dc bsoncodec.DecodeContext, vr bsonrw.ValueReader, val reflect.Value) error {
+func decimalBSONDecodeValue(dc bson.DecodeContext, vr bson.ValueReader, val reflect.Value) error {
 
 	if !val.IsValid() || !val.CanSet() || val.Type() != decimalType {
-		return bsoncodec.ValueDecoderError{
+		return bson.ValueDecoderError{
 			// prefix with GC to avoid any mongodb name collisions
 			// They have a Decimal128 type which this is not.
 			Name:     "GCDecimalDecodeValue",

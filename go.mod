@@ -3,8 +3,8 @@ module github.com/greatcloak/decimal
 go 1.24
 
 require (
-	github.com/stretchr/testify v1.8.4
-	go.mongodb.org/mongo-driver v1.17.3
+	github.com/stretchr/testify v1.10.0
+	go.mongodb.org/mongo-driver/v2 v2.3.0
 )
 
 require (

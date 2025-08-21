@@ -1,10 +1,11 @@
 package decimal
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // TestBSONDecimal tests marshalling and unmarshalling decimals as values and pointers.
@@ -30,11 +31,23 @@ func TestBSONDecimal(t *testing.T) {
 
 	td.DVal = NewFromInt(99)
 
-	out, err := bson.Marshal(td)
+	reg := bson.NewRegistry()
+	RegisterBSONDecimalCodec(reg)
+
+	var buf bytes.Buffer
+
+	enc := bson.NewEncoder(bson.NewDocumentWriter(&buf))
+	enc.SetRegistry(reg)
+
+	err := enc.Encode(td)
 	require.NoError(t, err, "should marshal bson")
 
+	out := buf.Bytes()
+
 	var td2 TestData
-	err = bson.Unmarshal(out, &td2)
+	dec := bson.NewDecoder(bson.NewDocumentReader(bytes.NewReader(out)))
+	dec.SetRegistry(reg)
+	err = dec.Decode(&td2)
 	require.NoError(t, err, "should unmarshal bson")
 
 	require.Equal(t, td.DPointer.String(), td2.DPointer.String())
@@ -47,7 +60,9 @@ func TestBSONDecimal(t *testing.T) {
 	require.Equal(t, td.Number, td2.Number)
 
 	var td3 bson.M
-	err = bson.Unmarshal(out, &td3)
+	dec = bson.NewDecoder(bson.NewDocumentReader(bytes.NewReader(out)))
+	dec.SetRegistry(reg)
+	err = dec.Decode(&td3)
 	require.NoError(t, err)
 
 	_, isOmitemptyFieldInMap := td3["dpointerempty"]
