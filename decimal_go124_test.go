@@ -42,6 +42,44 @@ func TestJSONOmitZeroTag(t *testing.T) {
 			},
 			expected: "{}",
 		},
+		{
+			name: "Zero.Copy constant",
+			parent: Parent{
+				Nested: Nested{
+					Amount: Zero.Copy(),
+				},
+			},
+			expected: "{}",
+		},
+		{
+			name: "Decimal{}.Copy",
+			parent: Parent{
+				Nested: Nested{
+					Amount: Decimal{}.Copy(),
+				},
+			},
+			expected: "{}",
+		},
+		{
+			name: "Decimal{}.Round",
+			parent: Parent{
+				Nested: Nested{
+					Amount: Decimal{}.Round(0),
+				},
+			},
+			expected: "{}",
+		},
+		{
+			// Expect a value unless [Nested] implements `IsZero() bool`.
+			// Go's definition os zero is a `Decimal{}` with no inner fields
+			name: "Decimal.NewFromInt(0) is not zero internally; expect value",
+			parent: Parent{
+				Nested: Nested{
+					Amount: NewFromInt(0),
+				},
+			},
+			expected: `{"nested":{}}`,
+		},
 	}
 
 	for _, tt := range tests {

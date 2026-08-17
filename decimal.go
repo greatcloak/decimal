@@ -475,6 +475,11 @@ func NewFromFloatWithExponent(value float64, exp int32) Decimal {
 
 // Copy returns a copy of decimal with the same value and exponent, but a different pointer to value.
 func (d Decimal) Copy() Decimal {
+	if d.IsZero() {
+		// Return a new zero value.
+		return Decimal{}
+	}
+
 	return Decimal{
 		value: new(big.Int).Set(d.getValue()),
 		exp:   d.exp,
