@@ -8,6 +8,8 @@ import "fmt"
 // unmarshallers (ex: Javascript's) will unmarshal JSON numbers to IEEE 754
 // double-precision floating point numbers, which means you can potentially
 // silently lose precision.
+//
+// Set it once at program start. Changing it while other goroutines use the package is a data race.
 var MarshalJSONWithoutQuotes = false
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
@@ -37,11 +39,12 @@ func (d *Decimal) UnmarshalJSON(decimalBytes []byte) error {
 
 // MarshalJSON implements the json.Marshaler interface.
 func (d Decimal) MarshalJSON() ([]byte, error) {
-	var str string
+	str := d.String()
 	if MarshalJSONWithoutQuotes {
-		str = d.String()
-	} else {
-		str = `"` + d.String() + `"`
+		return []byte(str), nil
 	}
-	return []byte(str), nil
+	b := make([]byte, 0, len(str)+2)
+	b = append(b, '"')
+	b = append(b, str...)
+	return append(b, '"'), nil
 }

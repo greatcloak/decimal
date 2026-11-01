@@ -71,7 +71,7 @@ func TestBadJSON(t *testing.T) {
 		}
 		err := json.Unmarshal([]byte(testCase), &doc)
 		if err == nil {
-			t.Errorf("expected error, got %+v", doc)
+			t.Errorf("%s: expected error, got %+v", testCase, doc)
 		}
 	}
 }

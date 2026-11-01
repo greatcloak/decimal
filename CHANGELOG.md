@@ -1,3 +1,21 @@
+## Decimal 1.7.0
+
+Merge various changes from [shopspring/decimal](https://github.com/shopspring/decimal) up to shopspring version 1.6.0
+
+## Decimal v1.6.0
+
+Merge various changes from shopspring/decimal
+
+Includes custom fix and tests for Decimal.Copy() not being safe with zero value decimal
+
+## Decimal v1.5.1
+
+update go deps
+
+## Decimal v1.5.0
+
+Update for mongodb driver v2+
+
 ## Decimal v1.4.5
 
 - Rebase on upstream

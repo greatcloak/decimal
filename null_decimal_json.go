@@ -6,8 +6,9 @@ func (d *NullDecimal) UnmarshalJSON(decimalBytes []byte) error {
 		d.Valid = false
 		return nil
 	}
-	d.Valid = true
-	return d.Decimal.UnmarshalJSON(decimalBytes)
+	err := d.Decimal.UnmarshalJSON(decimalBytes)
+	d.Valid = err == nil
+	return err
 }
 
 // MarshalJSON implements the json.Marshaler interface.

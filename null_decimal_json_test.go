@@ -92,7 +92,18 @@ func TestNullDecimalBadJSON(t *testing.T) {
 		}
 		err := json.Unmarshal([]byte(testCase), &doc)
 		if err == nil {
-			t.Errorf("expected error, got %+v", doc)
+			t.Errorf("%s: expected error, got %+v", testCase, doc)
 		}
+		if doc.Amount.Valid {
+			t.Errorf("%s: expected Valid to be false after an error", testCase)
+		}
+	}
+
+	var nd NullDecimal
+	if err := nd.Scan("nope"); err == nil || nd.Valid {
+		t.Errorf("Scan(\"nope\"): expected an error and Valid false, got %v and %v", err, nd.Valid)
+	}
+	if err := nd.DecodeSpanner("nope"); err == nil || nd.Valid {
+		t.Errorf("DecodeSpanner(\"nope\"): expected an error and Valid false, got %v and %v", err, nd.Valid)
 	}
 }
